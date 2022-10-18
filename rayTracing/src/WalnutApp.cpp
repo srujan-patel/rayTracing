@@ -42,7 +42,7 @@ public:
 			shared_ptr<Walnut::Image> image = m_Renderer.GetFinalImage();
 			
 			if(image)// imgui will crash if there is nothing to render initially for few pixels
-			ImGui::Image(image->GetDescriptorSet(), {(float)image->GetWidth(), (float)image->GetHeight()});// display the image, width and height is the initial width and height of the viewport window
+			ImGui::Image(image->GetDescriptorSet(), {(float)image->GetWidth(), (float)image->GetHeight() }, ImVec2(0,1), ImVec2(1,0));// display the image, width and height is the initial width and height of the viewport window
 
 			ImGui::End();
 

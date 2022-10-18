@@ -2,9 +2,8 @@
 #include "Walnut/EntryPoint.h"
 
 #include "Walnut/Image.h"
-#include "Walnut/Random.h"
 #include "Walnut/Timer.h"
-
+#include"Renderer.h"
 
 using namespace std;
 using namespace Walnut;
@@ -12,12 +11,10 @@ using namespace Walnut;
 class ExampleLayer : public Walnut::Layer
 {
 
-	shared_ptr<Image> m_Image; //Walnut::Image, a smart pointer to our Walnut image
-
+	Renderer m_Renderer;
 	//we will be using uint_32 because that is the size of the RGBA format
 
 	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0; //setting them to 0 by default
-	uint32_t* m_ImageData = nullptr; // image data
 	float m_LastRenderTime = 0.0f;
 
 public:
@@ -42,9 +39,10 @@ public:
 			m_ViewportWidth=ImGui::GetContentRegionAvail().x; //get available height and width of the viewpoint window 
 			m_ViewportHeight=ImGui::GetContentRegionAvail().y;
 			
+			shared_ptr<Walnut::Image> image = m_Renderer.GetFinalImage();
 			
-			if(m_Image)// imgui will crash if there is nothing to render initially for few pixels
-			ImGui::Image(m_Image->GetDescriptorSet(), {(float)m_Image->GetWidth(), (float)m_Image->GetHeight()});// display the image, width and height is the initial width and height of the viewport window
+			if(image)// imgui will crash if there is nothing to render initially for few pixels
+			ImGui::Image(image->GetDescriptorSet(), {(float)image->GetWidth(), (float)image->GetHeight()});// display the image, width and height is the initial width and height of the viewport window
 
 			ImGui::End();
 
@@ -56,22 +54,9 @@ public:
 
 		Timer timer;
 
-		if (!m_Image||m_ViewportWidth!= m_Image->GetWidth()||m_ViewportHeight!=m_Image->GetHeight()) { //img equals nullptr
-			m_Image = make_shared<Image>(m_ViewportWidth, m_ViewportHeight, ImageFormat::RGBA);// resize the image to match the viewport dimensions
+		m_Renderer.OnResize(m_ViewportHeight, m_ViewportHeight);
+		m_Renderer.Render();
 
-			delete[] m_ImageData;
-			m_ImageData = new uint32_t[m_ViewportWidth* m_ViewportHeight]; //realloacte the memory buffer according to the viewport dimensions
-		}
-
-
-
-		for (uint32_t i = 0; i < m_ViewportHeight * m_ViewportWidth; i++) { // generate the image 
-			//m_ImageData[i] = 0xffff3333;
-			m_ImageData[i] = Random::UInt(); //fill the image pixels using random image colors
-			//m_ImageData[i] = 0xff000000;// make the alpha channel one to make the pictures look solid
-		}
-
-		m_Image->SetData(m_ImageData);
 
 		m_LastRenderTime = timer.ElapsedMillis();
 	}

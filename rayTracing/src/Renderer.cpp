@@ -34,7 +34,7 @@ void Renderer::Render() {
 		//m_ImageData[i] = 0xff000000;// make the alpha channel one to make the pictures look solid
 
 		glm::vec2 coord = { (float)x / (float)m_FinalImage->GetWidth(), (float)y/(float)m_FinalImage->GetHeight() };// iterating through every pixel
-		
+		coord = coord * 2.0f - 1.0f;//-1to1 from 0to 1
 		m_ImageData[x+y * m_FinalImage->GetWidth()] = PerPixel(coord);
 
 		}
@@ -53,6 +53,36 @@ uint32_t Renderer::PerPixel(glm::vec2 coord)
 	uint8_t r = (uint8_t)(coord.x * 255.0f);
 	uint8_t g = (uint8_t)(coord.y * 255.0f);
 
-	return 0xff000000 | (g<<8) |r;
+
+
+	//equation of ray intersecting a sphere is given by
+	//(bx^2+by^2+bz^2)t^2 +2(axbx+ayby+azbz)t +(ax^2+ay^2+az^2-r^2)=0
+	
+	//we solve for t distance along the ray
+	//a = origin of the ray
+	//b = direction of the ray
+	//r is radius of sphere
+	//t=hit distance
+
+	// this can be written in form of quad equation ax^2 + by^2+c=0
+
+	float radius = 0.5f;
+	glm::vec3 rayOrigin(0.0f, 0.0f, 2.0f);
+	glm::vec3 rayDirection(coord.x, coord.y, -1.0f); //z value can be -1 or +1 because depth can be only in one direction
+
+	float a = glm::dot(rayDirection,rayDirection);
+	float b = 2.0f*glm::dot(rayOrigin, rayDirection);
+	float c = glm::dot(rayOrigin, rayOrigin) - radius * radius;
+
+	float d = b * b - 4.0f * a * c;
+
+
+	if (d >= 0) {
+			return 0xffff00ff; //we have solution ie we hit the sphere
+
+	}
+	else {
+		return 0xff000000;
+	}
 }
 

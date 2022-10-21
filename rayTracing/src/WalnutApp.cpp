@@ -4,13 +4,14 @@
 #include "Walnut/Image.h"
 #include "Walnut/Timer.h"
 #include"Renderer.h"
+#include"Camera.h"
 
 using namespace std;
 using namespace Walnut;
 
 class ExampleLayer : public Walnut::Layer
 {
-
+	Camera m_Camera;
 	Renderer m_Renderer;
 	//we will be using uint_32 because that is the size of the RGBA format
 
@@ -18,6 +19,12 @@ class ExampleLayer : public Walnut::Layer
 	float m_LastRenderTime = 0.0f;
 
 public:
+	ExampleLayer() :m_Camera(45.0f, 0.1f, 100.0f) {};
+
+	virtual void OnUpdate(float ts) override
+	{
+		m_Camera.OnUpdate(ts);
+	}
 	virtual void OnUIRender() override //get called every frame
 	{
 		ImGui::Begin("Settings"); //settings window
@@ -55,7 +62,8 @@ public:
 		Timer timer;
 
 		m_Renderer.OnResize(m_ViewportHeight, m_ViewportHeight);
-		m_Renderer.Render();
+		m_Camera.OnResize(m_ViewportHeight, m_ViewportHeight);
+		m_Renderer.Render(m_Camera);
 
 
 		m_LastRenderTime = timer.ElapsedMillis();

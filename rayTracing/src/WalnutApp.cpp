@@ -1,6 +1,6 @@
 #include "Walnut/Application.h"
 #include "Walnut/EntryPoint.h"
-
+#include<glm/gtc/type_ptr.hpp>
 #include "Walnut/Image.h"
 #include "Walnut/Timer.h"
 #include"Renderer.h"
@@ -11,6 +11,7 @@ using namespace Walnut;
 
 class ExampleLayer : public Walnut::Layer
 {
+	Scene m_Scene;
 	Camera m_Camera;
 	Renderer m_Renderer;
 	//we will be using uint_32 because that is the size of the RGBA format
@@ -19,7 +20,20 @@ class ExampleLayer : public Walnut::Layer
 	float m_LastRenderTime = 0.0f;
 
 public:
-	ExampleLayer() :m_Camera(45.0f, 0.1f, 100.0f) {};
+	ExampleLayer() :m_Camera(45.0f, 0.1f, 100.0f) {
+		{Sphere sphere;
+		sphere.Position = { 0.0f, 0.0f,0.0f };
+		sphere.radius = 0.5f;
+		sphere.Albedo = { 1.0f, 0.0f, 1.0f };
+		m_Scene.Spheres.push_back(sphere);
+		}
+		{		Sphere sphere;
+		sphere.Position = { 1.0f, 0.0f,-5.0f };
+		sphere.radius = 1.5f;
+		sphere.Albedo = { 0.2f, 0.3f, 1.0f };
+		m_Scene.Spheres.push_back(sphere); }
+
+	};
 
 	virtual void OnUpdate(float ts) override
 	{
@@ -35,6 +49,14 @@ public:
 
 			Render(); // render(generate) the image
 		}
+
+		ImGui::End();
+
+		ImGui::Begin("Scene"); //scene window
+		ImGui::DragFloat3("Position", glm::value_ptr(m_Scene.Spheres[0].Position), 0.1f);
+		ImGui::DragFloat("Radius", &m_Scene.Spheres[0].radius, 0.1f);
+		ImGui::ColorEdit3("Albedo", glm::value_ptr(m_Scene.Spheres[0].Albedo));
+		
 
 		ImGui::End();
 
@@ -63,7 +85,7 @@ public:
 
 		m_Renderer.OnResize(m_ViewportHeight, m_ViewportHeight);
 		m_Camera.OnResize(m_ViewportHeight, m_ViewportHeight);
-		m_Renderer.Render(m_Camera);
+		m_Renderer.Render(m_Scene, m_Camera);
 
 
 		m_LastRenderTime = timer.ElapsedMillis();

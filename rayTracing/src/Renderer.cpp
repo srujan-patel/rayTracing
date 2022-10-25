@@ -91,31 +91,43 @@ glm::vec4 Renderer::TraceRay(const Scene& scene, const Ray& ray)
 		return glm::vec4(0, 0, 0, 1); //return black color
 	}
 
-	Sphere* closestSphere = nullptr;
+const	Sphere* closestSphere = nullptr;
+float hitDistance = FLT_MAX;
 	for (const Sphere& sphere : scene.Spheres) {// iterate through the spheres
 
+		//const Sphere& sphere = scene.Spheres[0];
+
+		glm::vec3 origin = ray.Origin - sphere.Position;
+
+		float a = glm::dot(ray.Direction, ray.Direction);
+		float b = 2.0f * glm::dot(origin, ray.Direction);
+		float c = glm::dot(origin, origin) - sphere.radius * sphere.radius;
+
+		float d = b * b - 4.0f * a * c;
+
+		//-b+_sqrt(d)/2a
+
+		if (d < 0)
+			//			return glm::vec4(0, 0, 0, 1); //return black color
+			continue;
+
+		//			float t0 = (-b + glm::sqrt(d)) / (2.0f * a);//bigger solution 
+		float closestT = (-b - glm::sqrt(d)) / (2.0f * a);//smaller solution 
+		if (closestT < hitDistance) {
+			hitDistance = closestT;
+			closestSphere = &sphere;
+
+		}
 
 	}
-	const Sphere& sphere = scene.Spheres[0];
 
-	glm::vec3 origin = ray.Origin - sphere.Position;
+	if (closestSphere == nullptr) {
+		return glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
-	float a = glm::dot(ray.Direction,ray.Direction);
-	float b = 2.0f*glm::dot(origin, ray.Direction);
-	float c = glm::dot(origin, origin) - sphere.radius * sphere.radius;
+	}
+	glm::vec3 origin = ray.Origin - closestSphere->Position;
 
-	float d = b * b - 4.0f * a * c;
-
-	//-b+_sqrt(d)/2a
-
-	if (d < 0) 
-			return glm::vec4(0,0,0,1); //return black color
-
-
-			float t0 = (-b + glm::sqrt(d)) / (2.0f * a);//bigger solution 
-			float closestT = (-b - glm::sqrt(d)) / (2.0f * a);//smaller solution 
-
-			glm::vec3 h0 = origin + ray.Direction * closestT;
+			glm::vec3 h0 = origin + ray.Direction * hitDistance;
 			glm::vec3 normal = glm::normalize(h0);
 			//glm::vec3 h0 = rayOrigin + rayDirection * t0; //other hitpoint 
 			
@@ -129,7 +141,7 @@ glm::vec4 Renderer::TraceRay(const Scene& scene, const Ray& ray)
 
 
 
-			glm::vec3 sphereColor= sphere.Albedo; //ignoring the alpha channel for the sphere color
+			glm::vec3 sphereColor= closestSphere->Albedo; //ignoring the alpha channel for the sphere color
 //			sphereColor = normal*0.5f +0.5f;//a normal vector ranges from -1 to 1 but our color range is from 0 to 1 so we shift the color to start from 1
 			
 			sphereColor*= dotp;

@@ -53,11 +53,18 @@ public:
 		ImGui::End();
 
 		ImGui::Begin("Scene"); //scene window
-		ImGui::DragFloat3("Position", glm::value_ptr(m_Scene.Spheres[0].Position), 0.1f);
-		ImGui::DragFloat("Radius", &m_Scene.Spheres[0].radius, 0.1f);
-		ImGui::ColorEdit3("Albedo", glm::value_ptr(m_Scene.Spheres[0].Albedo));
-		
 
+
+		for(size_t i=0; i< m_Scene.Spheres.size(); i++){
+			ImGui::PushID(i);
+
+			ImGui::DragFloat3("Position", glm::value_ptr(m_Scene.Spheres[i].Position), 0.1f);
+		ImGui::DragFloat("Radius", &m_Scene.Spheres[i].radius, 0.1f);
+		ImGui::ColorEdit3("Albedo", glm::value_ptr(m_Scene.Spheres[i].Albedo));
+		
+		ImGui::Separator();
+		ImGui::PopID();
+		}
 		ImGui::End();
 
 

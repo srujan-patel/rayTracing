@@ -38,9 +38,11 @@ void Renderer::OnResize(uint32_t width, uint32_t height) {
 
 void Renderer::Render(const Scene& scene, const Camera& Camera) {
 
+	m_ActiveScene = &scene;
+	m_ActiveCamera = &Camera;
+
 	const glm::vec3& rayOrigin = Camera.GetPosition();
-	Ray ray;
-	ray.Origin = Camera.GetPosition();
+	
 
 	for (uint32_t y = 0; y < m_FinalImage->GetHeight(); y++){
 
@@ -51,8 +53,7 @@ void Renderer::Render(const Scene& scene, const Camera& Camera) {
 		//m_ImageData[i] = Walnut::Random::UInt(); //fill the image pixels using random image colors
 		//m_ImageData[i] = 0xff000000;// make the alpha channel one to make the pictures look solid
 
-		ray.Direction = Camera.GetRayDirections()[x+y* m_FinalImage->GetWidth()];
-		glm::vec4 color = TraceRay(scene, ray);
+		glm::vec4 color = PerPixel(x,y);
 		color = glm::clamp(color, glm::vec4(0.0f), glm::vec4(1.0f));
 		m_ImageData[x+y * m_FinalImage->GetWidth()] = Utils::ConvertToRGBA(color);
 
@@ -64,9 +65,41 @@ void Renderer::Render(const Scene& scene, const Camera& Camera) {
 
 	}
 
+glm::vec4 Renderer::PerPixel(uint32_t x,uint32_t y)
+{
+	Ray ray;
+	ray.Origin = m_ActiveCamera->GetPosition();
+	ray.Direction = m_ActiveCamera->GetRayDirections()[x + y * m_FinalImage->GetWidth()];
+
+	Renderer::HitPayload payload= TraceRay(ray);
+	if (payload.HitDistance < 0.0f) {
+
+		return glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	}
+
+	glm::vec3 lightDirection(-1.0f, -1.0f, -1.0f);
+	glm::vec3 lightDir = glm::normalize(lightDirection);//normalised light
 
 
-glm::vec4 Renderer::TraceRay(const Scene& scene, const Ray& ray)
+	float dotp = glm::max(glm::dot(payload.WorldNormal, -lightDir), 0.0f); //==cos angle ranges from -1 to 1 we are clamping it to 0 to 1 just from one side
+
+
+	const Sphere& sphere = m_ActiveScene->Spheres[payload.ObjectIndex];
+
+	glm::vec3 sphereColor = sphere.Albedo; //ignoring the alpha channel for the sphere color
+	//			sphereColor = normal*0.5f +0.5f;//a normal vector ranges from -1 to 1 but our color range is from 0 to 1 so we shift the color to start from 1
+
+	sphereColor *= dotp;
+	return glm::vec4(sphereColor, 1.0f);
+
+
+
+
+}
+
+
+
+Renderer::HitPayload Renderer::TraceRay(const Ray& ray)
 {
 
 	//uint8_t r = (uint8_t)(coord.x * 255.0f);
@@ -76,7 +109,7 @@ glm::vec4 Renderer::TraceRay(const Scene& scene, const Ray& ray)
 
 	//equation of ray intersecting a sphere is given by
 	//(bx^2+by^2+bz^2)t^2 +2(axbx+ayby+azbz)t +(ax^2+ay^2+az^2-r^2)=0
-	
+
 	//we solve for t distance along the ray
 	//a = origin of the ray
 	//b = direction of the ray
@@ -87,15 +120,15 @@ glm::vec4 Renderer::TraceRay(const Scene& scene, const Ray& ray)
 
 	float radius = 0.5f;
 
-	if (scene.Spheres.size() == 0) {
-		return glm::vec4(0, 0, 0, 1); //return black color
-	}
 
-const	Sphere* closestSphere = nullptr;
-float hitDistance = FLT_MAX;
-	for (const Sphere& sphere : scene.Spheres) {// iterate through the spheres
+
+	int closestSphere = -1;
+	float hitDistance = std::numeric_limits<float>::max();
+	for (size_t i = 0; i < m_ActiveScene->Spheres.size(); i++) {// iterate through the spheres
 
 		//const Sphere& sphere = scene.Spheres[0];
+
+		const Sphere& sphere = m_ActiveScene->Spheres[i];
 
 		glm::vec3 origin = ray.Origin - sphere.Position;
 
@@ -115,39 +148,57 @@ float hitDistance = FLT_MAX;
 		float closestT = (-b - glm::sqrt(d)) / (2.0f * a);//smaller solution 
 		if (closestT < hitDistance) {
 			hitDistance = closestT;
-			closestSphere = &sphere;
+			closestSphere = (int)i;
 
 		}
 
 	}
 
-	if (closestSphere == nullptr) {
-		return glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	if (closestSphere < 0) {
+		return Miss(ray);
 
 	}
-	glm::vec3 origin = ray.Origin - closestSphere->Position;
 
-			glm::vec3 h0 = origin + ray.Direction * hitDistance;
-			glm::vec3 normal = glm::normalize(h0);
-			//glm::vec3 h0 = rayOrigin + rayDirection * t0; //other hitpoint 
-			
-
-			glm::vec3 lightDirection(-1.0f, -1.0f, -1.0f);
-			glm::vec3 lightDir=glm::normalize(lightDirection);//normalised light
-
-
-			float dotp = glm::max(glm::dot(normal, -lightDir),0.0f); //==cos angle ranges from -1 to 1 we are clamping it to 0 to 1 just from one side
+	return ClosestHit(ray, hitDistance, closestSphere);
 
 
 
 
-			glm::vec3 sphereColor= closestSphere->Albedo; //ignoring the alpha channel for the sphere color
-//			sphereColor = normal*0.5f +0.5f;//a normal vector ranges from -1 to 1 but our color range is from 0 to 1 so we shift the color to start from 1
-			
-			sphereColor*= dotp;
-			return glm::vec4(sphereColor, 1.0f);
+}
+
+
+
+
+
+Renderer::HitPayload Renderer::ClosestHit(const Ray& ray, float hitDistance, int objectIndex)
+{
+	
+	Renderer::HitPayload payload;
+	payload.HitDistance = hitDistance;
+	payload.ObjectIndex = objectIndex;
 
 	
-	
+	const Sphere& closestSphere = m_ActiveScene->Spheres[objectIndex];
+
+	glm::vec3 origin = ray.Origin - closestSphere.Position;
+
+	payload.WorldPosition = origin + ray.Direction * hitDistance;
+	payload.WorldNormal = glm::normalize(payload.WorldPosition);
+	//glm::vec3 h0 = rayOrigin + rayDirection * t0; //other hitpoint 
+	payload.WorldPosition += closestSphere.Position;
+
+
+	return payload;
+
+}
+
+
+Renderer::HitPayload Renderer::Miss(const Ray& ray)
+{
+	Renderer::HitPayload payload;
+	payload.HitDistance = -1.0f;
+	return payload;
+
+
 }
 

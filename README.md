@@ -2,7 +2,7 @@
 The goal of this project is to get familiar with C++ and learn the basics of computer graphics. In this project we go from rendering a simple image to rendering multiple objects (spheres) with reflections, shadows, and other properties.
 
 ### Credit 
-A guide for building this project is available on [YouTube](https://www.youtube.com/watch?v=gfW1Fhd9u9Q&list=PLlrATfBNZ98edc5GshdBtREv5) 
+A guide for building this project is available on [YouTube- The Cherno](https://www.youtube.com/watch?v=gfW1Fhd9u9Q&list=PLlrATfBNZ98edc5GshdBtREv5)
 
 ## Getting Started
 

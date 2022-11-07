@@ -104,7 +104,7 @@ glm::vec4 Renderer::PerPixel(uint32_t x,uint32_t y)
 		sphereColor *= dotp;
 
 		color += sphereColor* multiplier;
-		multiplier *= 0.5f;
+		multiplier *= 0.3f;
 
 
 		ray.Origin = payload.WorldPosition+ payload.WorldNormal *0.001f;

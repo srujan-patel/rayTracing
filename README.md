@@ -14,4 +14,5 @@ Once you've cloned, you can customize the `premake5.lua` and `WalnutApp/premake5
 
 ### Requirements
 [Vulkan SDK](https://vulkan.lunarg.com)
+TO build and run the code use git --recursive clone 
 
